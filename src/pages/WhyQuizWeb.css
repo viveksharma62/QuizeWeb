@@ -1,0 +1,28 @@
+.why-quizweb {
+  background: #f8f9fa;
+}
+
+.feature-card {
+  border-radius: 12px;
+  transition: transform 0.3s, box-shadow 0.3s;
+  background: #ffffff;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.feature-icon {
+  color: #0d6efd;
+}
+
+.feature-text {
+  font-weight: 500;
+  font-size: 1rem;
+  color: #333;
+}
+
+h3 {
+  color: #0d6efd;
+}
