@@ -1,0 +1,17 @@
+.scrolling-text {
+  white-space: nowrap;
+  display: inline-block;
+  animation: scrollText 10s linear infinite;
+}
+
+@keyframes scrollText {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+.testimonial-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Max 2 lines */
+  -webkit-box-orient: vertical;
+}

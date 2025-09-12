@@ -1,0 +1,25 @@
+.login-page {
+  background: linear-gradient(to right, #6a11cb, #2575fc);
+}
+
+.login-card {
+  background: #fff;
+  padding: 2rem;
+}
+
+.form-control-lg {
+  border-radius: 10px;
+}
+
+.btn-lg {
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.btn-link {
+  color: #2575fc;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
