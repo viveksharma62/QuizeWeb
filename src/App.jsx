@@ -17,6 +17,7 @@ import Admin from "./pages/Admin.jsx";
 import Leaning from "./components/Learning.jsx";
 import AddQuest from "./components/AddQuest.jsx";
 import AddContent from "./components/AddContent.jsx";
+import ContactShow from "./components/ContactShow.jsx";
 
 
 const App = () => {
@@ -61,6 +62,7 @@ const App = () => {
                 <Route path="/learning/:category" element={<Leaning />} />    
                 <Route path="/addquest" element={<AddQuest />} />
                 <Route path="/addcontent" element={<AddContent />} />
+                <Route path="/contactshow" element={<ContactShow />} />
               </>
             )}
 
@@ -76,6 +78,7 @@ const App = () => {
                 <Route path="/learning/:category"  element={<Navigate to="/" />} /> 
                 <Route path="/addquest" element={<Navigate to="/" />} />
                 <Route path="/addcontent" element={<Navigate to="/" />} />
+                <Route path="/contactshow" element={<Navigate to="/" />} />
               </>
             )}
           </Routes>

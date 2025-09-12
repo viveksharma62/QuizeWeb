@@ -2,6 +2,9 @@ import React from "react";
 import { Container, Row, Col, Card } from "react-bootstrap";
 import { BiCheckCircle } from "react-icons/bi";
 import "./WhyQuizWeb.css"; // custom styles
+// import myImg from "../assets/myImg.jpg";
+import myImg from "../assets/myImg1.png";
+
 
 const features = [
   { title: "Wide range of quiz topics", icon: <BiCheckCircle /> },
@@ -38,10 +41,10 @@ const WhyQuizWeb = () => {
 
           <Col lg={6} className="text-center">
             <img
-              src="https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=600&q=80"
+              src={myImg}
               alt="QuizWeb Illustration"
               className="img-fluid rounded shadow-lg"
-              style={{ maxHeight: "400px", objectFit: "cover" }}
+              style={{ maxHeight: "600px", objectFit: "cover" }}
             />
           </Col>
         </Row>

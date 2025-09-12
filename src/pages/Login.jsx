@@ -28,7 +28,7 @@ const Login = () => {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
         setMessage("✅ Logged in successfully!");
-        navigate("/quizestart");
+        navigate("/features");
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;

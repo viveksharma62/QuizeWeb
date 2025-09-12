@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Button, Card } from "react-bootstrap";
+import { Container, Row, Col, Button, Card, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { db } from "../db/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
 const Features = () => {
   const [features, setFeatures] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,7 +19,16 @@ const Features = () => {
           id: doc.id,
           ...doc.data(),
         }));
+
         setFeatures(data);
+        setFiltered(data);
+
+        // Get unique categories
+        const uniqueCategories = [
+          "All",
+          ...new Set(data.map((item) => item.category)),
+        ];
+        setCategories(uniqueCategories);
       } catch (error) {
         console.error("Error fetching features:", error);
       }
@@ -25,10 +37,36 @@ const Features = () => {
     fetchData();
   }, []);
 
+  // Handle category change
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    if (category === "All") {
+      setFiltered(features);
+    } else {
+      setFiltered(features.filter((item) => item.category === category));
+    }
+  };
+
   return (
     <Container className="my-5">
+      {/* Filter Dropdown */}
+      <div className="d-flex justify-content-end mb-4">
+        <Form.Select
+          value={selectedCategory}
+          onChange={(e) => handleCategoryChange(e.target.value)}
+          className="w-auto shadow-sm"
+        >
+          {categories.map((cat, index) => (
+            <option key={index} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </Form.Select>
+      </div>
+
+      {/* Features Cards */}
       <Row className="g-4">
-        {features.map((item) => (
+        {filtered.map((item) => (
           <Col md={6} key={item.id}>
             <Card className="shadow-lg border-0 rounded-4 overflow-hidden h-100">
               <Row className="align-items-center h-100">
