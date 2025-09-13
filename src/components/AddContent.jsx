@@ -178,6 +178,7 @@ const AddFeature = () => {
                 <option value="node">Node.js</option>
                 <option value="mongodb">MongoDB</option>
                 <option value="express">Express.js</option>
+                <option value="html">HTML</option>
               </Form.Select>
             </Form.Group>
 
