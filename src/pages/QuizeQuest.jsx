@@ -3,7 +3,6 @@ import { db, auth } from "../db/firebase";
 import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { jsPDF } from "jspdf";
 
-
 const Quize = () => {
   const [allQuestions, setAllQuestions] = useState([]);
   const [userName, setUserName] = useState("");
@@ -22,9 +21,9 @@ const Quize = () => {
   const [wrong, setWrong] = useState(0);
   const [skipped, setSkipped] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
+  const [warningCount, setWarningCount] = useState(0);
   const timerRef = useRef(null);
 
-  // shuffle helper
   const shuffle = (arr) => {
     let a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -34,7 +33,6 @@ const Quize = () => {
     return a;
   };
 
-  // fetch user info
   const fetchUserInfo = async () => {
     if (auth.currentUser) {
       const userRef = doc(db, "users", auth.currentUser.uid);
@@ -47,7 +45,6 @@ const Quize = () => {
     }
   };
 
-  // fetch all questions
   const fetchQuestions = async () => {
     const snap = await getDocs(collection(db, "questions"));
     const docs = snap.docs.map(d => {
@@ -66,13 +63,13 @@ const Quize = () => {
   useEffect(() => { fetchUserInfo(); fetchQuestions(); }, []);
 
   const getCategories = () => ["all", ...Array.from(new Set(allQuestions.map(q => q.cat || "General")))];
-  
+
   useEffect(() => {
     if (!quizStarted) return;
     const filtered = allQuestions.filter(q => category === "all" ? true : q.cat === category);
     const ord = shuffle(filtered.map((_, i) => i));
     setPool(filtered); setOrder(ord); setIdx(0); setScore(0); setCorrect(0); setWrong(0); setSkipped(0);
-    setSelected(null); setUserAnswers([]); setQuizEnded(false); setTimeLeft(60);
+    setSelected(null); setUserAnswers([]); setQuizEnded(false); setTimeLeft(60); setWarningCount(0);
     if (mode === "timed") startTimer(); else stopTimer();
   }, [category, mode, quizStarted, allQuestions]);
 
@@ -85,7 +82,6 @@ const Quize = () => {
 
   const startTimer = () => setTimeLeft(60);
   const stopTimer = () => clearTimeout(timerRef.current);
-
   const handleSelect = i => setSelected(i);
 
   const handleNext = (skip=false, goTo=null) => {
@@ -109,7 +105,6 @@ const Quize = () => {
     setTimeLeft(60); if (mode==="timed") startTimer();
   };
 
-  // Save history in Firebase
   const saveHistory = async () => {
     if (!auth.currentUser) return;
     try {
@@ -133,126 +128,124 @@ const Quize = () => {
   const handleEnd = async () => {
     stopTimer();
     setQuizEnded(true); setQuizStarted(false);
-    await saveHistory(); // save quiz data
+    await saveHistory();
   };
 
   const handleRetry = () => {
     setQuizStarted(true); setQuizEnded(false); setIdx(0); setScore(0); setCorrect(0); setWrong(0); setSkipped(0);
-    setSelected(null); setUserAnswers([]); setTimeLeft(60); if (mode==="timed") startTimer();
+    setSelected(null); setUserAnswers([]); setTimeLeft(60); setWarningCount(0); if (mode==="timed") startTimer();
   };
 
-const downloadCertificate = (userName, userEnroll, score, total) => {
-  const doc = new jsPDF({ orientation: "landscape" });
-
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  // Colors
-  const primaryColor = "#1976d2"; // blue
-  const secondaryColor = "#444";
-
-  // Border
-  doc.setDrawColor(primaryColor);
-  doc.setLineWidth(3);
-  doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
-
-  // Title
-  doc.setFontSize(32);
-  doc.setTextColor(primaryColor);
-  doc.text("Certificate of Achievement", pageWidth / 2, 40, { align: "center" });
-
-  // Awarded By
-  doc.setFontSize(18);
-  doc.setTextColor(secondaryColor);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 140, 0); // orange
-  doc.text("Awarded By: QuizoPedia", pageWidth / 2, 60, { align: "center" });
-
-  // Main text
-  doc.setFontSize(20);
-  doc.setTextColor("#000");
-  doc.text("This certificate is proudly presented to", pageWidth / 2, 80, { align: "center" });
-
-  // User Name
-  doc.setFontSize(26);
-  doc.setTextColor(primaryColor);
-  doc.text(userName, pageWidth / 2, 100, { align: "center" });
-
-  // Enrollment
-  doc.setFontSize(16);
-  doc.setTextColor(secondaryColor);
-  doc.text(`Enrollment: ${userEnroll}`, pageWidth / 2, 115, { align: "center" });
-
-  // Score and Percentage
-  const percentage = ((score / total) * 100).toFixed(2);
-  doc.text(`Score: ${score} / ${total}`, pageWidth / 2, 130, { align: "center" });
-  doc.text(`Percentage: ${percentage}%`, pageWidth / 2, 145, { align: "center" });
-
-  // Date & Time
-  const now = new Date();
-  const date = now.toLocaleDateString();
-  const time = now.toLocaleTimeString();
-  doc.setFontSize(14);
-  doc.text(`Date: ${date}   Time: ${time}`, pageWidth / 2, 165, { align: "center" });
-
-  // Footer
-  doc.setFontSize(12);
-  doc.setTextColor(secondaryColor);
-  doc.text("© QuizoPedia", 20, pageHeight - 20, { align: "left" });
-  doc.text("Signed by: Vivek Sharma", pageWidth - 20, pageHeight - 20, { align: "right" });
-
-  // Save
-  doc.save(`Certificate_${userName}.pdf`);
-};
+  const downloadCertificate = (userName, userEnroll, score, total) => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const primaryColor = "#1976d2"; 
+    const secondaryColor = "#444";
+    doc.setDrawColor(primaryColor);
+    doc.setLineWidth(3);
+    doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+    doc.setFontSize(32); doc.setTextColor(primaryColor);
+    doc.text("Certificate of Achievement", pageWidth / 2, 40, { align: "center" });
+    doc.setFontSize(18); doc.setTextColor(255,140,0);
+    doc.text("Awarded By: QuizoPedia", pageWidth/2, 60, {align:"center"});
+    doc.setFontSize(20); doc.setTextColor("#000");
+    doc.text("This certificate is proudly presented to", pageWidth/2, 80, {align:"center"});
+    doc.setFontSize(26); doc.setTextColor(primaryColor);
+    doc.text(userName, pageWidth/2, 100, {align:"center"});
+    doc.setFontSize(16); doc.setTextColor(secondaryColor);
+    doc.text(`Enrollment: ${userEnroll}`, pageWidth/2, 115, {align:"center"});
+    const percentage = ((score / total) * 100).toFixed(2);
+    doc.text(`Score: ${score} / ${total}`, pageWidth/2, 130, {align:"center"});
+    doc.text(`Percentage: ${percentage}%`, pageWidth/2, 145, {align:"center"});
+    const now = new Date();
+    doc.setFontSize(14);
+    doc.text(`Date: ${now.toLocaleDateString()}   Time: ${now.toLocaleTimeString()}`, pageWidth/2, 165, {align:"center"});
+    doc.setFontSize(12); doc.setTextColor(secondaryColor);
+    doc.text("© QuizoPedia", 20, pageHeight-20, {align:"left"});
+    doc.text("Signed by: Vivek Sharma", pageWidth-20, pageHeight-20, {align:"right"});
+    doc.save(`Certificate_${userName}.pdf`);
+  };
 
   const getCircleColor = (i) => {
     const ans = userAnswers[i];
     if (!ans) return "bg-secondary";
-    if (ans.chosen === null) return "bg-primary"; // skipped
+    if (ans.chosen === null) return "bg-primary";
     if (ans.chosen === ans.correct) return "bg-success";
     return "bg-danger";
   };
 
   const q = pool[order[idx]];
 
+  const startFullscreen = () => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  };
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (warningCount < 2) alert(`Warning #${warningCount+1}: Do not switch tabs!`);
+        setWarningCount(prev => prev + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [warningCount]);
+
+  useEffect(() => { if (warningCount >= 3) handleEnd(); }, [warningCount]);
+
+  useEffect(() => {
+    const block = (e) => e.preventDefault();
+    document.addEventListener("copy", block);
+    document.addEventListener("contextmenu", block);
+    document.addEventListener("selectstart", block);
+    return () => {
+      document.removeEventListener("copy", block);
+      document.removeEventListener("contextmenu", block);
+      document.removeEventListener("selectstart", block);
+    };
+  }, []);
+
   return (
     <div className="container my-5">
       {!quizStarted && !quizEnded && (
-        <div className="card shadow-lg p-5">
-          <h2 className="mb-3 text-center">Start Your Quiz</h2>
+        <div className="card shadow-lg p-5 scale-up-center">
+          <h2 className="mb-3 text-center text-3xl font-bold animate-bounce">Start Your Quiz</h2>
           <div className="mb-3">
             <label className="form-label">Select Category</label>
-            <select className="form-select" value={category} onChange={e=>setCategory(e.target.value)}>
+            <select className="form-select transition-all duration-300 hover:scale-105" value={category} onChange={e=>setCategory(e.target.value)}>
               {getCategories().map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="mb-3">
             <label className="form-label">Select Mode</label>
-            <select className="form-select" value={mode} onChange={e=>setMode(e.target.value)}>
+            <select className="form-select transition-all duration-300 hover:scale-105" value={mode} onChange={e=>setMode(e.target.value)}>
               <option value="practice">Practice</option>
               <option value="timed">Timed</option>
             </select>
           </div>
           <div className="text-center">
-            <button className="btn btn-success btn-lg mt-3" onClick={()=>setQuizStarted(true)}>Start Quiz</button>
+            <button className="btn btn-success btn-lg mt-3 animate-pulse" onClick={() => { setQuizStarted(true); startFullscreen(); }}>Start Quiz</button>
           </div>
         </div>
       )}
 
       {quizStarted && q && (
-        <div className="row">
+        <div className="row fade-in">
           <div className="col-lg-8">
-            <div className="card shadow-sm p-4 mb-3">
+            <div className="card shadow-sm p-4 mb-3 hover:shadow-lg transition-shadow duration-300">
               <h5 className="fw-bold">Question {idx+1} / {pool.length}</h5>
               <p className="fs-5">{q.q}</p>
               {q.options.map((opt, i) => (
-                <button key={i} className={`btn mb-2 w-100 text-start ${selected===i ? "btn-primary" : "btn-outline-primary"} text-truncate`} onClick={()=>handleSelect(i)}>
+                <button key={i} className={`btn mb-2 w-100 text-start transition-all duration-300 hover:scale-105 ${selected===i ? "btn-primary" : "btn-outline-primary"} text-truncate`} onClick={()=>handleSelect(i)}>
                   {opt}
                 </button>
               ))}
               <div className="d-flex justify-content-between mt-3">
-                <button className="btn btn-outline-secondary" onClick={()=>handleNext(true)}>Skip</button>
-                <button className="btn btn-primary" onClick={()=>handleNext(false)}>Next</button>
+                <button className="btn btn-outline-secondary hover:scale-105 transition-transform" onClick={()=>handleNext(true)}>Skip</button>
+                <button className="btn btn-primary hover:scale-105 transition-transform" onClick={()=>handleNext(false)}>Next</button>
               </div>
             </div>
           </div>
@@ -262,30 +255,36 @@ const downloadCertificate = (userName, userEnroll, score, total) => {
               <h5 className="text-center mb-3">Timer: {timeLeft}s</h5>
               <div className="d-flex flex-wrap justify-content-center">
                 {pool.map((_, i) => (
-                  <div key={i} className={`rounded-circle text-white d-flex justify-content-center align-items-center me-2 mb-2 ${getCircleColor(i)}`} style={{width:"40px", height:"40px", cursor:"pointer"}} onClick={()=>setIdx(i)}>
+                  <div key={i} className={`rounded-circle text-white d-flex justify-content-center align-items-center me-2 mb-2 ${getCircleColor(i)} hover:scale-110 transition-transform`} style={{width:"40px", height:"40px", cursor:"pointer"}} onClick={()=>setIdx(i)}>
                     {i+1}
                   </div>
                 ))}
               </div>
-              <button className="btn btn-success w-100 mt-3" onClick={handleEnd}>Submit Quiz</button>
+              <button className="btn btn-success w-100 mt-3 animate-bounce" onClick={handleEnd}>Submit Quiz</button>
             </div>
           </div>
         </div>
       )}
 
       {quizEnded && (
-        <div className="card shadow-lg p-5 text-center">
-          <h2 className="mb-3 text-success">Quiz Completed!</h2>
+        <div className="card shadow-lg p-5 text-center scale-up-center">
+          <h2 className="mb-3 text-success animate-bounce">Quiz Completed!</h2>
           <p className="fs-5">Student: <strong>{userName}</strong> | Enrollment: <strong>{userEnroll}</strong></p>
           <p className="fs-5">Score: <strong>{score} / {pool.length}</strong></p>
           <p className="fs-6">Correct: <strong>{correct}</strong> | Wrong: <strong>{wrong}</strong> | Skipped: <strong>{skipped}</strong></p>
           <div className="mt-4">
-            <button className="btn btn-success btn-lg m-2" onClick={handleRetry}>Retry Quiz</button>
-            {/* <button className="btn btn-warning btn-lg m-2" onClick={downloadCertificate}>Download Certificate PDF</button> */}
-            <button className="btn btn-warning btn-lg m-2" onClick={() => downloadCertificate(userName, userEnroll, score, pool.length) }>Download Certificate</button>
+            <button className="btn btn-success btn-lg m-2 animate-pulse" onClick={handleRetry}>Retry Quiz</button>
+            <button className="btn btn-warning btn-lg m-2 animate-pulse" onClick={() => downloadCertificate(userName, userEnroll, score, pool.length)}>Download Certificate</button>
           </div>
         </div>
       )}
+
+      <style>{`
+        .scale-up-center { animation: scale-up-center 0.5s ease-in-out both; }
+        @keyframes scale-up-center { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .fade-in { animation: fade-in 0.5s ease-in-out both; }
+        @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+      `}</style>
     </div>
   );
 };
