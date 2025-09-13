@@ -3,6 +3,7 @@ import { db, auth } from "../db/firebase";
 import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { jsPDF } from "jspdf";
 
+
 const Quize = () => {
   const [allQuestions, setAllQuestions] = useState([]);
   const [userName, setUserName] = useState("");
@@ -140,16 +141,69 @@ const Quize = () => {
     setSelected(null); setUserAnswers([]); setTimeLeft(60); if (mode==="timed") startTimer();
   };
 
-  const downloadCertificate = () => {
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.setFontSize(30);
-    doc.text("Certificate", doc.internal.pageSize.width/2, 50, { align:"center" });
-    doc.setFontSize(18);
-    doc.text(`Awarded to: ${userName}`, doc.internal.pageSize.width/2, 80, { align:"center" });
-    doc.text(`Enrollment: ${userEnroll}`, doc.internal.pageSize.width/2, 100, { align:"center" });
-    doc.text(`Score: ${score} / ${pool.length}`, doc.internal.pageSize.width/2, 120, { align:"center" });
-    doc.save(`Certificate_${userName}.pdf`);
-  };
+const downloadCertificate = (userName, userEnroll, score, total) => {
+  const doc = new jsPDF({ orientation: "landscape" });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Colors
+  const primaryColor = "#1976d2"; // blue
+  const secondaryColor = "#444";
+
+  // Border
+  doc.setDrawColor(primaryColor);
+  doc.setLineWidth(3);
+  doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+
+  // Title
+  doc.setFontSize(32);
+  doc.setTextColor(primaryColor);
+  doc.text("Certificate of Achievement", pageWidth / 2, 40, { align: "center" });
+
+  // Awarded By
+  doc.setFontSize(18);
+  doc.setTextColor(secondaryColor);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 140, 0); // orange
+  doc.text("Awarded By: QuizoPedia", pageWidth / 2, 60, { align: "center" });
+
+  // Main text
+  doc.setFontSize(20);
+  doc.setTextColor("#000");
+  doc.text("This certificate is proudly presented to", pageWidth / 2, 80, { align: "center" });
+
+  // User Name
+  doc.setFontSize(26);
+  doc.setTextColor(primaryColor);
+  doc.text(userName, pageWidth / 2, 100, { align: "center" });
+
+  // Enrollment
+  doc.setFontSize(16);
+  doc.setTextColor(secondaryColor);
+  doc.text(`Enrollment: ${userEnroll}`, pageWidth / 2, 115, { align: "center" });
+
+  // Score and Percentage
+  const percentage = ((score / total) * 100).toFixed(2);
+  doc.text(`Score: ${score} / ${total}`, pageWidth / 2, 130, { align: "center" });
+  doc.text(`Percentage: ${percentage}%`, pageWidth / 2, 145, { align: "center" });
+
+  // Date & Time
+  const now = new Date();
+  const date = now.toLocaleDateString();
+  const time = now.toLocaleTimeString();
+  doc.setFontSize(14);
+  doc.text(`Date: ${date}   Time: ${time}`, pageWidth / 2, 165, { align: "center" });
+
+  // Footer
+  doc.setFontSize(12);
+  doc.setTextColor(secondaryColor);
+  doc.text("© QuizoPedia", 20, pageHeight - 20, { align: "left" });
+  doc.text("Signed by: Vivek Sharma", pageWidth - 20, pageHeight - 20, { align: "right" });
+
+  // Save
+  doc.save(`Certificate_${userName}.pdf`);
+};
 
   const getCircleColor = (i) => {
     const ans = userAnswers[i];
@@ -227,7 +281,8 @@ const Quize = () => {
           <p className="fs-6">Correct: <strong>{correct}</strong> | Wrong: <strong>{wrong}</strong> | Skipped: <strong>{skipped}</strong></p>
           <div className="mt-4">
             <button className="btn btn-success btn-lg m-2" onClick={handleRetry}>Retry Quiz</button>
-            <button className="btn btn-warning btn-lg m-2" onClick={downloadCertificate}>Download Certificate PDF</button>
+            {/* <button className="btn btn-warning btn-lg m-2" onClick={downloadCertificate}>Download Certificate PDF</button> */}
+            <button className="btn btn-warning btn-lg m-2" onClick={() => downloadCertificate(userName, userEnroll, score, pool.length) }>Download Certificate</button>
           </div>
         </div>
       )}

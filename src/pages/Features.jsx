@@ -3,12 +3,14 @@ import { Container, Row, Col, Button, Card, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { db } from "../db/firebase";
 import { collection, getDocs } from "firebase/firestore";
+import Loading from "./Loading"; // 👈 apna Loading component import kar lo
 
 const Features = () => {
   const [features, setFeatures] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [loading, setLoading] = useState(true); // 👈 new loading state
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,6 +33,8 @@ const Features = () => {
         setCategories(uniqueCategories);
       } catch (error) {
         console.error("Error fetching features:", error);
+      } finally {
+        setLoading(false); // 👈 loading done
       }
     };
 
@@ -46,6 +50,10 @@ const Features = () => {
       setFiltered(features.filter((item) => item.category === category));
     }
   };
+
+  if (loading) {
+    return <Loading />; // 👈 yaha loading screen dikhega
+  }
 
   return (
     <Container className="my-5">

@@ -20,7 +20,7 @@ const WhyQuizWeb = () => {
           <Col lg={6} className="mb-4 mb-lg-0">
             <h3 className="fw-bold mb-3">Interactive & Fun Learning</h3>
             <p className="lead text-muted mb-4">
-              QuizWeb is designed to make learning exciting and engaging. Test your knowledge, challenge friends, and explore quizzes across multiple topics.
+              Quizopedia is designed to make learning exciting and engaging. Test your knowledge, challenge friends, and explore quizzes across multiple topics.
             </p>
             
             <div className="feature-cards">

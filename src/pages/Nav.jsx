@@ -11,7 +11,7 @@ const Nav = ({ isLoggedIn }) => {
       <div className="container">
         {/* Brand */}
         <Link className="navbar-brand fw-bold fs-3 text-light" to="/">
-          <span className="text-warning">⚡</span> QuizWeb
+          <span className="text-warning">⚡</span> QuizoPedia
         </Link>
 
         {/* Toggler for mobile */}

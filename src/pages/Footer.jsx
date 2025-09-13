@@ -34,7 +34,7 @@ const Footer = () => {
           {/* Right Side */}
           <div className="col-md-4 text-center text-md-end">
             <a
-              href="https://github.com/your-github-id"
+              href="https://github.com/viveksharma62"
               target="_blank"
               rel="noopener noreferrer"
               className="text-light fs-4 me-3"
@@ -42,7 +42,7 @@ const Footer = () => {
               <FaGithub />
             </a>
             <a
-              href="https://linkedin.com/in/your-linkedin-id"
+              href="https://www.linkedin.com/in/vivek-kumar-35637b26a/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-light fs-4"

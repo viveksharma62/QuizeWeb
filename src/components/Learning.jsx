@@ -3,16 +3,19 @@ import { useParams } from "react-router-dom";
 import { Container, Card, Button, Collapse } from "react-bootstrap";
 import { db } from "../db/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import Loading from "../pages/Loading"; // 👈 yaha apna Loading.jsx import karo
 
 const Learning = () => {
   const { category } = useParams();
   const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(true); // 👈 new loading state
   const [openCode, setOpenCode] = useState(false);
   const [openOutput, setOpenOutput] = useState(false);
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
+        setLoading(true); // start loading
         const q = query(
           collection(db, "features"),
           where("category", "==", category)
@@ -23,35 +26,41 @@ const Learning = () => {
         }
       } catch (error) {
         console.error("Error fetching content:", error);
+      } finally {
+        setLoading(false); // stop loading
       }
     };
 
     fetchContent();
   }, [category]);
 
-  if (!content) {
-    return (
-      <p className="text-center text-muted mt-5 fs-5">⏳ Loading content...</p>
-    );
+  // 🔹 Agar loading chal raha hai to Loading.jsx show hoga
+  if (loading) {
+    return <Loading />;
   }
 
   return (
     <Container className="my-5">
-      <Card className="shadow-lg border-0 rounded-4 p-4" style={{ backgroundColor: "#f8f9fa" }}>
+      <Card
+        className="shadow-lg border-0 rounded-4 p-4"
+        style={{ backgroundColor: "#f8f9fa" }}
+      >
         {/* Banner */}
         <div className="text-center mb-4">
           <img
             src={content.image}
             alt={content.title}
             className="img-fluid rounded shadow-sm"
-            style={{ maxHeight: "300px", objectFit: "cover", borderRadius: "15px" }}
+            style={{
+              maxHeight: "300px",
+              objectFit: "cover",
+              borderRadius: "15px",
+            }}
           />
         </div>
 
         {/* Title */}
-        <h2 className="fw-bold text-primary mb-3">
-          {content.title}
-        </h2>
+        <h2 className="fw-bold text-primary mb-3">{content.title}</h2>
 
         {/* Full Description */}
         <p className="fs-5 text-dark mb-4" style={{ lineHeight: "1.8" }}>
@@ -71,7 +80,10 @@ const Learning = () => {
               💻 {openCode ? "Hide Example Code" : "Show Example Code"}
             </Button>
             <Collapse in={openCode}>
-              <div id="example-code-collapse" className="p-3 bg-dark rounded shadow-sm mb-3">
+              <div
+                id="example-code-collapse"
+                className="p-3 bg-dark rounded shadow-sm mb-3"
+              >
                 <pre className="text-white" style={{ overflowX: "auto" }}>
                   <code>{content.exampleCode}</code>
                 </pre>
@@ -111,12 +123,12 @@ const Learning = () => {
             <Button
               variant="primary"
               className="px-5 py-2 rounded-pill shadow-sm"
-              style={{ background: "linear-gradient(90deg,#007bff,#00c6ff)", border: "none" }}
+              style={{
+                background: "linear-gradient(90deg,#007bff,#00c6ff)",
+                border: "none",
+              }}
               onClick={() =>
-                window.open(
-                  `https://codesandbox.io/s/new?file=/App.js`,
-                  "_blank"
-                )
+                window.open(`https://codesandbox.io/s/new?file=/App.js`, "_blank")
               }
             >
               🚀 Run Code Online

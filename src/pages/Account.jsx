@@ -3,9 +3,11 @@ import { auth, db } from "../db/firebase";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { FaEnvelope, FaUser, FaMapMarkerAlt, FaBook, FaUserShield, FaSchool, FaClipboard } from "react-icons/fa";
+import Loading from "./Loading"; // Import Loading component
 
 const Account = () => {
   const [userData, setUserData] = useState({});
+  const [loading, setLoading] = useState(true);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminId, setAdminId] = useState("");
   const [adminPass, setAdminPass] = useState("");
@@ -22,6 +24,7 @@ const Account = () => {
           console.log("No user data found!");
         }
       }
+      setLoading(false);
     };
     fetchUserData();
   }, []);
@@ -43,6 +46,10 @@ const Account = () => {
       alert("Invalid Admin Credentials!");
     }
   };
+
+  if (loading) {
+    return <Loading />; // Show loading screen until data is fetched
+  }
 
   return (
     <div className="container mt-5">

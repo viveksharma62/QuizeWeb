@@ -16,7 +16,7 @@ const Home = () => {
         <Container>
           <div className="animate__animated animate__fadeInDown">
             <h1 className="display-4 fw-bold mb-3">
-              Welcome to <span className="text-warning">QuizMaster</span> 🎯
+              Welcome to <span className="text-warning">Quizopedia</span> 🎯
             </h1>
             <p className="lead text-light mb-4">
               Test your knowledge, challenge your friends, and make learning fun!
@@ -93,7 +93,7 @@ const Home = () => {
       {/* Why QuizWeb Section */}
       <section className="py-5 bg-white">
         <Container>
-          <h2 className="text-center mb-4">Why QuizWeb?</h2>
+          <h2 className="text-center mb-4">Why Quizopedia?</h2>
           <Row className="justify-content-center align-items-center">
             <WhyQuizWeb />
           </Row>

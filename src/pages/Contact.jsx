@@ -12,6 +12,7 @@ const Contact = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [userMessages, setUserMessages] = useState([]);
+  const [userEmail, setUserEmail] = useState(localStorage.getItem("userEmail") || ""); // 👈 persist email
 
   // Handle input change
   const handleChange = (e) => {
@@ -35,7 +36,11 @@ const Contact = () => {
       });
 
       setSuccess("✅ Message sent successfully!");
-      setFormData({ name: "", email: "", message: "" });
+      // 👇 email ko save karo (refresh ke baad bhi rahe)
+      setUserEmail(formData.email);
+      localStorage.setItem("userEmail", formData.email);
+
+      setFormData({ name: "", email: formData.email, message: "" }); // 👈 email clear mat karo
     } catch (error) {
       console.error("Error saving contact:", error);
       setSuccess("❌ Failed to send message. Try again!");
@@ -46,7 +51,7 @@ const Contact = () => {
 
   // Real-time listener for user messages
   useEffect(() => {
-    if (!formData.email) return;
+    if (!userEmail) return; // 👈 ab userEmail ke upar depend karega
 
     const q = query(collection(db, "contacts"), orderBy("timestamp", "desc"));
 
@@ -56,12 +61,12 @@ const Contact = () => {
         ...doc.data(),
       }));
 
-      const userData = data.filter((msg) => msg.email === formData.email);
+      const userData = data.filter((msg) => msg.email === userEmail);
       setUserMessages(userData);
     });
 
     return () => unsubscribe();
-  }, [formData.email]);
+  }, [userEmail]);
 
   return (
     <div className="container my-5">
