@@ -1,27 +1,41 @@
 import React, { useState } from "react";
 import { Container, Card, Form, Button, Row, Col } from "react-bootstrap";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../db/firebase.js";
 
 const AddFeature = () => {
   const [formData, setFormData] = useState({
+    youtubeUrl: "",
     title: "",
     shortDescription: "",
     fullDescription: "",
     image: "",
     exampleCode: "",
-    outputUrl: "",
-    category: "", // react / node / etc
+    outputType: "image", // default
+    outputValue: "",
+    category: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleOutputTypeChange = (e) => {
+    setFormData({ ...formData, outputType: e.target.value, outputValue: "" });
+  };
+
+  const getVideoId = (url) => {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname === "youtu.be") return urlObj.pathname.slice(1);
+      if (urlObj.hostname.includes("youtube.com")) return urlObj.searchParams.get("v");
+    } catch {
+      return null;
+    }
+    return null;
   };
 
   const handleSubmit = async (e) => {
@@ -30,18 +44,23 @@ const AddFeature = () => {
     setMsg("");
 
     try {
-      await addDoc(collection(db, "features"), {
+      const newDocRef = doc(collection(db, "features"));
+      await setDoc(newDocRef, {
         ...formData,
+        id: newDocRef.id,
         createdAt: serverTimestamp(),
       });
+
       setMsg("✅ Feature added successfully!");
       setFormData({
+        youtubeUrl: "",
         title: "",
         shortDescription: "",
         fullDescription: "",
         image: "",
         exampleCode: "",
-        outputUrl: "",
+        outputType: "image",
+        outputValue: "",
         category: "",
       });
     } catch (error) {
@@ -56,22 +75,46 @@ const AddFeature = () => {
     <Container className="my-5">
       <Card className="shadow-lg border-0 rounded-4 overflow-hidden">
         {/* Header */}
-        <div
-          className="p-4 text-white"
-          style={{ background: "linear-gradient(90deg,#28a745,#20c997)" }}
-        >
+        <div className="p-4 text-white" style={{ background: "linear-gradient(90deg,#28a745,#20c997)" }}>
           <h2 className="fw-bold text-center mb-0">➕ Add Feature</h2>
         </div>
 
-        {/* Form */}
         <div className="p-4 bg-light">
           <Form onSubmit={handleSubmit}>
+            {/* YouTube Link */}
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-bold">🎥 YouTube Video Link</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Paste YouTube video link"
+                name="youtubeUrl"
+                value={formData.youtubeUrl}
+                onChange={handleChange}
+              />
+            </Form.Group>
+
+            {/* YouTube Preview */}
+            {formData.youtubeUrl && getVideoId(formData.youtubeUrl) && (
+              <div className="mb-4 text-center">
+                <iframe
+                  width="100%"
+                  height="315"
+                  src={`https://www.youtube.com/embed/${getVideoId(formData.youtubeUrl)}`}
+                  title="YouTube video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="rounded shadow"
+                ></iframe>
+              </div>
+            )}
+
             {/* Title */}
-            <Form.Group className="mb-4" controlId="title">
+            <Form.Group className="mb-4">
               <Form.Label className="fw-bold">📝 Title</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter title (e.g. Learn React)"
+                placeholder="Enter title"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
@@ -80,7 +123,7 @@ const AddFeature = () => {
             </Form.Group>
 
             {/* Short Description */}
-            <Form.Group className="mb-4" controlId="shortDescription">
+            <Form.Group className="mb-4">
               <Form.Label className="fw-bold">📖 Short Description</Form.Label>
               <Form.Control
                 as="textarea"
@@ -94,12 +137,12 @@ const AddFeature = () => {
             </Form.Group>
 
             {/* Full Description */}
-            <Form.Group className="mb-4" controlId="fullDescription">
+            <Form.Group className="mb-4">
               <Form.Label className="fw-bold">📘 Full Description</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={5}
-                placeholder="Detailed content for Learning page"
+                placeholder="Detailed content"
                 name="fullDescription"
                 value={formData.fullDescription}
                 onChange={handleChange}
@@ -110,7 +153,7 @@ const AddFeature = () => {
             {/* Banner Image */}
             <Row className="mb-4">
               <Col md={8}>
-                <Form.Group controlId="image">
+                <Form.Group>
                   <Form.Label className="fw-bold">🖼 Banner Image URL</Form.Label>
                   <Form.Control
                     type="text"
@@ -122,10 +165,7 @@ const AddFeature = () => {
                   />
                 </Form.Group>
               </Col>
-              <Col
-                md={4}
-                className="d-flex justify-content-center align-items-center"
-              >
+              <Col md={4} className="d-flex justify-content-center align-items-center">
                 {formData.image ? (
                   <img
                     src={formData.image}
@@ -140,7 +180,7 @@ const AddFeature = () => {
             </Row>
 
             {/* Example Code */}
-            <Form.Group className="mb-4" controlId="exampleCode">
+            <Form.Group className="mb-4">
               <Form.Label className="fw-bold">💻 Example Code</Form.Label>
               <Form.Control
                 as="textarea"
@@ -152,34 +192,56 @@ const AddFeature = () => {
               />
             </Form.Group>
 
-            {/* Output Image */}
-            <Form.Group className="mb-4" controlId="outputUrl">
-              <Form.Label className="fw-bold">🖼 Output Image URL</Form.Label>
+            {/* Output Type */}
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-bold">🖼 Output Type</Form.Label>
+              <div>
+                <Form.Check
+                  inline
+                  label="Image"
+                  type="radio"
+                  name="outputType"
+                  value="image"
+                  checked={formData.outputType === "image"}
+                  onChange={handleOutputTypeChange}
+                />
+                <Form.Check
+                  inline
+                  label="Text"
+                  type="radio"
+                  name="outputType"
+                  value="text"
+                  checked={formData.outputType === "text"}
+                  onChange={handleOutputTypeChange}
+                />
+              </div>
+            </Form.Group>
+
+            {/* Output Value */}
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-bold">
+                {formData.outputType === "image" ? "🖼 Output Image URL" : "📝 Output Text"}
+              </Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter output image URL"
-                name="outputUrl"
-                value={formData.outputUrl}
+                placeholder={formData.outputType === "image" ? "Enter image URL" : "Enter text output"}
+                name="outputValue"
+                value={formData.outputValue}
                 onChange={handleChange}
               />
             </Form.Group>
 
             {/* Category */}
-            <Form.Group className="mb-4" controlId="category">
+            <Form.Group className="mb-4">
               <Form.Label className="fw-bold">📂 Category</Form.Label>
-              <Form.Select
+              <Form.Control
+                type="text"
+                placeholder="Type category name"
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
                 required
-              >
-                <option value="">-- Select Category --</option>
-                <option value="react">React</option>
-                <option value="node">Node.js</option>
-                <option value="mongodb">MongoDB</option>
-                <option value="express">Express.js</option>
-                <option value="html">HTML</option>
-              </Form.Select>
+              />
             </Form.Group>
 
             {/* Submit */}
@@ -189,16 +251,12 @@ const AddFeature = () => {
                 type="submit"
                 disabled={loading}
                 className="px-5 py-2 rounded-pill shadow-sm fw-bold"
-                style={{
-                  background: "linear-gradient(90deg,#28a745,#20c997)",
-                  border: "none",
-                }}
+                style={{ background: "linear-gradient(90deg,#28a745,#20c997)", border: "none" }}
               >
                 {loading ? "⏳ Uploading..." : "🚀 Add Feature"}
               </Button>
             </div>
 
-            {/* Message */}
             {msg && <p className="text-center mt-3 fw-bold">{msg}</p>}
           </Form>
         </div>
@@ -208,3 +266,4 @@ const AddFeature = () => {
 };
 
 export default AddFeature;
+  

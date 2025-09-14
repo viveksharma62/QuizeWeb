@@ -18,7 +18,7 @@ const Features = () => {
       try {
         const querySnapshot = await getDocs(collection(db, "features"));
         const data = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
+          id: doc.id,   // ✅ yaha id store ho rahi hai
           ...doc.data(),
         }));
         setFeatures(data);
@@ -72,7 +72,7 @@ const Features = () => {
                 transition: "transform 0.3s, box-shadow 0.3s",
                 cursor: "pointer",
               }}
-              onClick={() => navigate(`/learning/${item.category}`)}
+              onClick={() => navigate(`/learning/${item.id}`)} // ✅ ab id pass ho rahi hai
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "scale(1.05)";
                 e.currentTarget.style.boxShadow = "0 1rem 2rem rgba(0,0,0,0.3)";
@@ -121,7 +121,10 @@ const Features = () => {
                     e.currentTarget.style.transform = "scale(1)";
                     e.currentTarget.style.boxShadow = "0 0.5rem 1rem rgba(0,0,0,0.2)";
                   }}
-                  onClick={() => navigate(`/learning/${item.category}`)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // ✅ Card click aur button click conflict na kare
+                    navigate(`/learning/${item.id}`);
+                  }}
                 >
                   Read More
                 </Button>

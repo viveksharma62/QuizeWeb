@@ -1,292 +1,331 @@
 // src/components/StudentDetails.jsx
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, Button, Table, Collapse, Spinner } from "react-bootstrap";
-import { db } from "../db/firebase"; // tumhara firebase config
-import { collection, getDocs } from "firebase/firestore";
+import { Container, Row, Col, Card, Button, Table, Collapse, Spinner, Modal, Form } from "react-bootstrap";
+import { db } from "../db/firebase";
+import { collection, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
 
 const StudentDetails = () => {
   const [loading, setLoading] = useState(true);
-
   const [users, setUsers] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [contents, setContents] = useState([]);
-  const [messages, setMessages] = useState([]);
   const [quizHistory, setQuizHistory] = useState([]);
 
-  // Collapse state
   const [showUsers, setShowUsers] = useState(false);
   const [showQuestions, setShowQuestions] = useState(false);
   const [showContent, setShowContent] = useState(false);
-  const [showMessages, setShowMessages] = useState(false);
   const [showQuizHistory, setShowQuizHistory] = useState(false);
-
-  // Stats
-  const [stats, setStats] = useState({
-    totalQuestions: 0,
-    addedQuestions: 0,
-    pendingQuestions: 0,
-  });
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // USERS
         const usersSnap = await getDocs(collection(db, "users"));
-        const usersData = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setUsers(usersData);
+        setUsers(usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-        // QUESTIONS
-        const questionsSnap = await getDocs(collection(db, "quizQuestions"));
-        const questionsDataRaw = questionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Category wise count
-        const categoryCount = {};
-        questionsDataRaw.forEach(q => {
-          if (q.category) {
-            categoryCount[q.category] = (categoryCount[q.category] || 0) + 1;
-          }
-        });
-        const questionsData = Object.keys(categoryCount).map(cat => ({
-          category: cat,
-          total: categoryCount[cat],
-        }));
-        setQuestions(questionsData);
+        const questionsSnap = await getDocs(collection(db, "questions"));
+        setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-        const totalQ = questionsDataRaw.length;
-        const addedQ = questionsDataRaw.filter(q => q.added).length;
-        const pendingQ = totalQ - addedQ;
-        setStats({ totalQuestions: totalQ, addedQuestions: addedQ, pendingQuestions: pendingQ });
+        const contentsSnap = await getDocs(collection(db, "features"));
+        setContents(contentsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-        // STUDY CONTENT
-        const contentsSnap = await getDocs(collection(db, "studyContent"));
-        const contentsDataRaw = contentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Category wise count
-        const contentCount = {};
-        contentsDataRaw.forEach(c => {
-          if (c.category) {
-            contentCount[c.category] = (contentCount[c.category] || 0) + 1;
-          }
-        });
-        const contentsData = Object.keys(contentCount).map(cat => ({
-          category: cat,
-          total: contentCount[cat],
-        }));
-        setContents(contentsData);
-
-        // MESSAGES (from contact collection)
-        const messagesSnap = await getDocs(collection(db, "contact"));
-        const messagesData = messagesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMessages(messagesData);
-
-        // QUIZ HISTORY
         const quizSnap = await getDocs(collection(db, "quizHistory"));
-        const quizData = quizSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setQuizHistory(quizData);
-
+        setQuizHistory(quizSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
+
+  const handleDelete = async (collectionName, id, setter) => {
+    if (window.confirm("Are you sure?")) {
+      await deleteDoc(doc(db, collectionName, id));
+      setter(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+  const toggleDisable = async (userId) => {
+    const userRef = doc(db, "users", userId);
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    const newStatus = !user.disabled;
+    await updateDoc(userRef, { disabled: newStatus });
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, disabled: newStatus } : u));
+  };
 
   if (loading) return <div className="text-center my-5"><Spinner animation="border" /> Loading...</div>;
 
   return (
     <Container className="my-5">
-      <h1 className="text-center fw-bold mb-5 text-primary">Admin Dashboard - Student Details</h1>
+      <h1 className="text-center fw-bold mb-4 text-primary">Admin Dashboard</h1>
 
-      {/* Stats Cards */}
-      <Row className="g-4 mb-4">
-        <Col md={4}>
-          <Card className="text-center shadow-lg border-0 rounded-4 bg-primary text-white p-4">
-            <h4>Total Questions</h4>
-            <h2>{stats.totalQuestions}</h2>
+      {/* Summary Boxes */}
+      <Row className="mb-4 text-center">
+        <Col md={3} className="mb-2">
+          <Card bg="info" text="white" className="p-3 shadow-sm">
+            <Card.Body>
+              <Card.Title>Total Users</Card.Title>
+              <h2>{users.length}</h2>
+            </Card.Body>
           </Card>
         </Col>
-        <Col md={4}>
-          <Card className="text-center shadow-lg border-0 rounded-4 bg-success text-white p-4">
-            <h4>Added Questions</h4>
-            <h2>{stats.addedQuestions}</h2>
+        <Col md={3} className="mb-2">
+          <Card bg="warning" text="white" className="p-3 shadow-sm">
+            <Card.Body>
+              <Card.Title>Total Questions</Card.Title>
+              <h2>{questions.length}</h2>
+            </Card.Body>
           </Card>
         </Col>
-        <Col md={4}>
-          <Card className="text-center shadow-lg border-0 rounded-4 bg-danger text-white p-4">
-            <h4>Pending Questions</h4>
-            <h2>{stats.pendingQuestions}</h2>
+        <Col md={3} className="mb-2">
+          <Card bg="secondary" text="white" className="p-3 shadow-sm">
+            <Card.Body>
+              <Card.Title>Total Study Material</Card.Title>
+              <h2>{contents.length}</h2>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={3} className="mb-2">
+          <Card bg="success" text="white" className="p-3 shadow-sm">
+            <Card.Body>
+              <Card.Title>Total Quiz Attempts</Card.Title>
+              <h2>{quizHistory.length}</h2>
+            </Card.Body>
           </Card>
         </Col>
       </Row>
 
       <Row className="g-4">
-
-        {/* Users */}
+        {/* Users Table */}
         <Col md={12}>
           <Button className="w-100 mb-2" variant="info" onClick={() => setShowUsers(!showUsers)}>
             Users ({users.length})
           </Button>
           <Collapse in={showUsers}>
-            <div>
-              <Card className="p-3 shadow-sm mb-4">
-                <Table striped bordered hover responsive>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Enrollment</th>
-                      <th>Email</th>
+            <Card className="p-3 mb-4 shadow-sm">
+              <Table striped bordered hover responsive>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Enroll</th>
+                    <th>Email</th>
+                    <th>Disabled</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id}>
+                      <td>{u.name}</td>
+                      <td>{u.enroll}</td>
+                      <td>{u.email}</td>
+                      <td>{u.disabled ? "Yes" : "No"}</td>
+                      <td className="d-flex gap-2">
+                        <Button size="sm" variant="danger" onClick={() => handleDelete("users", u.id, setUsers)}>Delete</Button>
+                        <Button size="sm" variant={u.disabled ? "success" : "secondary"} onClick={() => toggleDisable(u.id)}>
+                          {u.disabled ? "Enable" : "Disable"}
+                        </Button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user, idx) => (
-                      <tr key={idx}>
-                        <td>{user.name}</td>
-                        <td>{user.enroll}</td>
-                        <td>{user.email}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </Card>
-            </div>
+                  ))}
+                </tbody>
+              </Table>
+            </Card>
           </Collapse>
         </Col>
 
-        {/* Questions Category-wise */}
+        {/* Questions Table */}
         <Col md={12}>
           <Button className="w-100 mb-2" variant="warning" onClick={() => setShowQuestions(!showQuestions)}>
-            Questions Category-wise
+            Questions ({questions.length})
           </Button>
           <Collapse in={showQuestions}>
-            <div>
-              <Card className="p-3 shadow-sm mb-4">
-                <Table striped bordered hover responsive>
-                  <thead>
-                    <tr>
-                      <th>Category</th>
-                      <th>Total Questions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {questions.map((q, idx) => (
-                      <tr key={idx}>
-                        <td>{q.category}</td>
-                        <td>{q.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </Card>
-            </div>
+            <Card className="p-3 mb-4 shadow-sm">
+              <Table striped bordered hover responsive>
+                <thead>
+                  <tr><th>Sr. No</th><th>Question</th><th>Category</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  {questions.map((q, idx) => (
+                    <QuestionRow key={q.id} q={q} idx={idx} setQuestions={setQuestions} handleDelete={handleDelete} />
+                  ))}
+                </tbody>
+              </Table>
+            </Card>
           </Collapse>
         </Col>
 
-        {/* Study Material */}
+        {/* Study Material Table */}
         <Col md={12}>
           <Button className="w-100 mb-2" variant="secondary" onClick={() => setShowContent(!showContent)}>
-            Study Material Added
+            Study Material ({contents.length})
           </Button>
           <Collapse in={showContent}>
-            <div>
-              <Card className="p-3 shadow-sm mb-4">
-                <Table striped bordered hover responsive>
-                  <thead>
-                    <tr>
-                      <th>Category</th>
-                      <th>Total Materials</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contents.map((c, idx) => (
-                      <tr key={idx}>
-                        <td>{c.category}</td>
-                        <td>{c.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </Card>
-            </div>
+            <Card className="p-3 mb-4 shadow-sm">
+              <Table striped bordered hover responsive>
+                <thead>
+                  <tr><th>Sr. No</th><th>Title</th><th>Category</th><th>Content</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  {contents.map((c, idx) => (
+                    <ContentRow key={c.id} c={c} idx={idx} setContents={setContents} handleDelete={handleDelete} />
+                  ))}
+                </tbody>
+              </Table>
+            </Card>
           </Collapse>
         </Col>
 
-        {/* Messages */}
-        <Col md={12}>
-          <Button className="w-100 mb-2" variant="dark" onClick={() => setShowMessages(!showMessages)}>
-            Messages Received
-          </Button>
-          <Collapse in={showMessages}>
-            <div>
-              <Card className="p-3 shadow-sm mb-4">
-                <Table striped bordered hover responsive>
-                  <thead>
-                    <tr>
-                      <th>From</th>
-                      <th>Message</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {messages.map((m, idx) => (
-                      <tr key={idx}>
-                        <td>{m.from}</td>
-                        <td>{m.message}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </Card>
-            </div>
-          </Collapse>
-        </Col>
-
-        {/* Quiz History */}
+        {/* Quiz History Table */}
         <Col md={12}>
           <Button className="w-100 mb-2" variant="success" onClick={() => setShowQuizHistory(!showQuizHistory)}>
-            Quiz History
+            Quiz History ({quizHistory.length})
           </Button>
           <Collapse in={showQuizHistory}>
-            <div>
-              <Card className="p-3 shadow-sm mb-4">
-                <Table striped bordered hover responsive>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Enroll</th>
-                      <th>Quiz</th>
-                      <th>Correct</th>
-                      <th>Wrong</th>
-                      <th>Skipped</th>
-                      <th>Percentage</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quizHistory.map((q, idx) => {
-                      const total = (q.correct || 0) + (q.wrong || 0) + (q.skipped || 0);
-                      const percent = total > 0 ? ((q.correct / total) * 100).toFixed(2) : 0;
-                      return (
-                        <tr key={idx}>
-                          <td>{q.name}</td>
-                          <td>{q.enroll}</td>
-                          <td>{q.quiz}</td>
-                          <td>{q.correct}</td>
-                          <td>{q.wrong}</td>
-                          <td>{q.skipped}</td>
-                          <td>{percent}%</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table>
-              </Card>
-            </div>
+            <Card className="p-3 mb-4 shadow-sm">
+              <Table striped bordered hover responsive>
+                <thead>
+                  <tr><th>Name</th><th>Enroll</th><th>Category</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Skipped</th><th>Action</th></tr>
+                </thead>
+                <tbody>{quizHistory.map((q, idx) => (
+                  <tr key={q.id}>
+                    <td>{q.name}</td>
+                    <td>{q.enroll}</td>
+                    <td>{q.category}</td>
+                    <td>{q.score}</td>
+                    <td>{q.correct}</td>
+                    <td>{q.wrong}</td>
+                    <td>{q.skipped}</td>
+                    <td>
+                      <Button size="sm" variant="danger" onClick={() => handleDelete("quizHistory", q.id, setQuizHistory)}>Delete</Button>
+                    </td>
+                  </tr>
+                ))}</tbody>
+              </Table>
+            </Card>
           </Collapse>
         </Col>
-
       </Row>
     </Container>
   );
 };
 
 export default StudentDetails;
+
+// ===== QuestionRow with Modal =====
+const QuestionRow = ({ q, idx, setQuestions, handleDelete }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [editQuestion, setEditQuestion] = useState(q.q);
+  const [editOptions, setEditOptions] = useState(q.options || ["", "", "", ""]);
+  const [editAnswer, setEditAnswer] = useState(q.answer || "");
+
+  const handleUpdate = async () => {
+    const questionRef = doc(db, "questions", q.id);
+    await updateDoc(questionRef, { q: editQuestion, options: editOptions, answer: editAnswer });
+    setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, q: editQuestion, options: editOptions, answer: editAnswer } : item));
+    setShowModal(false);
+  };
+
+  return (
+    <>
+      <tr>
+        <td>{idx + 1}</td>
+        <td>{q.q}</td>
+        <td>{q.cat || "General"}</td>
+        <td className="d-flex gap-2">
+          <Button size="sm" variant="danger" onClick={() => handleDelete("questions", q.id, setQuestions)}>Delete</Button>
+          <Button size="sm" variant="primary" onClick={() => setShowModal(true)}>Edit</Button>
+        </td>
+      </tr>
+
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Question</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-2">
+              <Form.Label>Question</Form.Label>
+              <Form.Control type="text" value={editQuestion} onChange={e => setEditQuestion(e.target.value)} />
+            </Form.Group>
+            {editOptions.map((opt, i) => (
+              <Form.Group key={i} className="mb-2">
+                <Form.Label>Option {i + 1}</Form.Label>
+                <Form.Control type="text" value={opt} onChange={e => {
+                  const newOpts = [...editOptions]; newOpts[i] = e.target.value; setEditOptions(newOpts);
+                }} />
+              </Form.Group>
+            ))}
+            <Form.Group className="mb-2">
+              <Form.Label>Answer</Form.Label>
+              <Form.Control type="text" value={editAnswer} onChange={e => setEditAnswer(e.target.value)} />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
+          <Button variant="success" onClick={handleUpdate}>Update</Button>
+        </Modal.Footer>
+      </Modal>
+    </>
+  );
+};
+
+// ===== ContentRow with Modal =====
+const ContentRow = ({ c, idx, setContents, handleDelete }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [editTitle, setEditTitle] = useState(c.title);
+  const [editCategory, setEditCategory] = useState(c.category || "");
+  const [editContent, setEditContent] = useState(c.content || "");
+
+  const handleUpdate = async () => {
+    const contentRef = doc(db, "features", c.id);
+    await updateDoc(contentRef, { title: editTitle, category: editCategory, content: editContent });
+    setContents(prev => prev.map(item => item.id === c.id ? { ...item, title: editTitle, category: editCategory, content: editContent } : item));
+    setShowModal(false);
+  };
+
+  return (
+    <>
+      <tr>
+        <td>{idx + 1}</td>
+        <td>{c.title}</td>
+        <td>{c.category || "General"}</td>
+        <td>{c.content || ""}</td>
+        <td className="d-flex gap-2">
+          <Button size="sm" variant="danger" onClick={() => handleDelete("features", c.id, setContents)}>Delete</Button>
+          <Button size="sm" variant="primary" onClick={() => setShowModal(true)}>Edit</Button>
+        </td>
+      </tr>
+
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Study Material</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-2">
+              <Form.Label>Title</Form.Label>
+              <Form.Control type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Category</Form.Label>
+              <Form.Control type="text" value={editCategory} onChange={e => setEditCategory(e.target.value)} />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Content</Form.Label>
+              <Form.Control as="textarea" rows={3} value={editContent} onChange={e => setEditContent(e.target.value)} />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
+          <Button variant="success" onClick={handleUpdate}>Update</Button>
+        </Modal.Footer>
+      </Modal>
+    </>
+  );
+};

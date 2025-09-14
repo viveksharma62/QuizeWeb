@@ -40,12 +40,11 @@ const Account = () => {
   };
 
   const handleAdminLogin = () => {
-    // if (adminId === "admin" && adminPass === "admin123") {
-    //   navigate("/admin");
-    // } else {
-    //   alert("Invalid Admin Credentials!");
-    // }
-    navigate("/admin");
+    if (adminId === "vivek" && adminPass === "vivek123") {
+      navigate("/admin");
+    } else {
+      alert("Invalid Admin Credentials!");
+    }
   };
 
   if (loading) {
