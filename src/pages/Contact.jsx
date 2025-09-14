@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db/firebase"; 
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
+import { Container, Row, Col, Card, Form, Button, Spinner, Alert } from "react-bootstrap";
+import { FaEnvelope, FaPaperPlane, FaCommentDots } from "react-icons/fa";
+import "./ContactAnimation.css"; // CSS for floating icons
 
 const Contact = () => {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
@@ -47,71 +50,69 @@ const Contact = () => {
     return () => unsubscribe();
   }, [userEmail]);
 
-  // Inline CSS for professional styling
-  const styles = {
-    container: { marginTop: "50px", marginBottom: "50px" },
-    card: { borderRadius: "12px", padding: "30px", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" },
-    formLabel: { fontWeight: "500" },
-    button: { fontWeight: "600", letterSpacing: "1px" },
-    sectionTitle: { marginBottom: "25px", color: "#2c3e50" },
-    messageCard: { borderRadius: "10px", padding: "15px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }
-  };
-
   return (
-    <div className="container" style={styles.container}>
-      <div className="row justify-content-center">
-        <div className="col-lg-8 col-md-10">
-          <div className="card p-4" style={styles.card}>
+    <Container fluid className="min-vh-100 py-5 position-relative" style={{ background: "#f0f4f8" }}>
+      
+      {/* Floating Icons */}
+      <FaEnvelope className="floating-icon icon1" />
+      <FaPaperPlane className="floating-icon icon2" />
+      <FaCommentDots className="floating-icon icon3" />
+
+      <Row className="w-100 justify-content-center">
+        <Col lg={6} md={8} sm={10}>
+          <Card className="shadow-lg p-4 rounded-4 bg-white position-relative z-1">
             <h2 className="text-center mb-3" style={{ color: "#007bff" }}>📩 Contact Us</h2>
-            <p className="text-center text-muted mb-4">
-              Have questions or feedback? Fill out the form below and we’ll get back to you soon.
-            </p>
+            <p className="text-center text-muted mb-4">Have questions or feedback? Fill out the form below and we’ll get back to you soon.</p>
+            
+            <Form onSubmit={handleSubmit}>
+              <Form.Group className="mb-3">
+                <Form.Label>Full Name</Form.Label>
+                <Form.Control type="text" name="name" placeholder="Enter your name" value={formData.name} onChange={handleChange} required />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Email Address</Form.Label>
+                <Form.Control type="email" name="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} required />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Message</Form.Label>
+                <Form.Control as="textarea" rows={4} placeholder="Write your message..." name="message" value={formData.message} onChange={handleChange} required />
+              </Form.Group>
+              <div className="d-grid mb-2">
+                <Button variant="primary" size="lg" type="submit" disabled={loading}>
+                  {loading ? <Spinner animation="border" size="sm" /> : "🚀 Send Message"}
+                </Button>
+              </div>
+            </Form>
 
-            {/* Contact Form */}
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
-                <label className="form-label" style={styles.formLabel}>Full Name</label>
-                <input type="text" name="name" className="form-control" placeholder="Enter your name" value={formData.name} onChange={handleChange} required />
-              </div>
-              <div className="mb-3">
-                <label className="form-label" style={styles.formLabel}>Email Address</label>
-                <input type="email" name="email" className="form-control" placeholder="Enter your email" value={formData.email} onChange={handleChange} required />
-              </div>
-              <div className="mb-3">
-                <label className="form-label" style={styles.formLabel}>Message</label>
-                <textarea name="message" className="form-control" rows="4" placeholder="Write your message..." value={formData.message} onChange={handleChange} required></textarea>
-              </div>
-              <div className="d-grid">
-                <button type="submit" className="btn btn-primary btn-lg" style={styles.button} disabled={loading}>
-                  {loading ? "⏳ Sending..." : "🚀 Send Message"}
-                </button>
-              </div>
-            </form>
+            {success && <Alert variant={success.includes("✅") ? "success" : "danger"} className="text-center mt-2">{success}</Alert>}
+          </Card>
+        </Col>
+      </Row>
 
-            {success && <p className="text-center mt-3 fw-bold" style={{ color: success.includes("✅") ? "green" : "red" }}>{success}</p>}
-
-            {/* User Messages */}
-            {userMessages.length > 0 && (
-              <div className="mt-5">
-                <h4 className="fw-bold" style={styles.sectionTitle}>📜 Your Messages & Replies</h4>
-                {userMessages.map((msg) => (
-                  <div key={msg.id} className="mb-3 p-3" style={styles.messageCard}>
+      {userMessages.length > 0 && (
+        <Row className="w-100 justify-content-center mt-5">
+          <Col lg={8} md={10}>
+            <h4 className="mb-3" style={{ color: "#2c3e50" }}>📜 Your Messages & Replies</h4>
+            <Row className="g-3">
+              {userMessages.map((msg) => (
+                <Col key={msg.id} md={12}>
+                  <Card className="shadow-sm rounded-4 p-3 bg-white">
                     <p className="mb-1"><strong>📝 Message:</strong> {msg.message}</p>
                     <p className="text-muted small">{msg.timestamp?.toDate().toLocaleString()}</p>
                     {msg.reply ? (
-                      <div className="alert alert-success mt-2"><strong>✅ Admin Reply:</strong> {msg.reply}</div>
+                      <Alert variant="success" className="mt-2"><strong>✅ Admin Reply:</strong> {msg.reply}</Alert>
                     ) : (
-                      <div className="alert alert-warning mt-2">⏳ Waiting for admin reply...</div>
+                      <Alert variant="warning" className="mt-2">⏳ Waiting for admin reply...</Alert>
                     )}
-                  </div>
-                ))}
-              </div>
-            )}
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </Col>
+        </Row>
+      )}
 
-          </div>
-        </div>
-      </div>
-    </div>
+    </Container>
   );
 };
 
