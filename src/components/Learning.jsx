@@ -38,7 +38,8 @@ const Learning = () => {
     try {
       const urlObj = new URL(url);
       if (urlObj.hostname === "youtu.be") return urlObj.pathname.slice(1);
-      if (urlObj.hostname.includes("youtube.com")) return urlObj.searchParams.get("v");
+      if (urlObj.hostname.includes("youtube.com"))
+        return urlObj.searchParams.get("v");
     } catch {
       return null;
     }
@@ -72,13 +73,14 @@ const Learning = () => {
           <Col md={6} className="d-flex flex-column justify-content-center align-items-start ps-4">
             <h2 className="fw-bold text-primary">{content.title}</h2>
             <p className="text-muted fs-5">{content.shortDescription}</p>
-            {content.youtubeUrl && videoId && !playVideo && (
+
+            {content.youtubeUrl && videoId && (
               <Button
-                variant="danger"
+                variant={playVideo ? "secondary" : "danger"}
                 className="px-4 py-2 rounded-pill mt-3"
-                onClick={() => setPlayVideo(true)}
+                onClick={() => setPlayVideo(!playVideo)}
               >
-                ▶️ Play Video
+                {playVideo ? "⏸ Pause Video" : "▶️ Play Video"}
               </Button>
             )}
           </Col>
@@ -89,7 +91,7 @@ const Learning = () => {
           <div className="text-center mb-4">
             <iframe
               width="100%"
-              height="450"
+              height="600"
               src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
               title="YouTube Video"
               frameBorder="0"
@@ -100,10 +102,12 @@ const Learning = () => {
           </div>
         )}
 
-        {/* Full Description */}
-        <p className="fs-5 text-dark mb-4" style={{ lineHeight: "1.8" }}>
-          {content.fullDescription}
-        </p>
+        {/* Full Description (Rich Text) */}
+        <div
+          className="fs-5 text-dark mb-4"
+          style={{ lineHeight: "1.8" }}
+          dangerouslySetInnerHTML={{ __html: content.fullDescription }}
+        ></div>
 
         {/* Example Code Accordion */}
         {content.exampleCode && (
@@ -127,8 +131,8 @@ const Learning = () => {
           </>
         )}
 
-        {/* Output Image Accordion */}
-        {content.outputUrl && (
+        {/* Output Accordion (Image or Text) */}
+        {(content.outputType && content.outputValue) && (
           <>
             <Button
               variant="outline-dark"
@@ -141,12 +145,21 @@ const Learning = () => {
             </Button>
             <Collapse in={openOutput}>
               <div id="output-collapse" className="text-center my-3">
-                <img
-                  src={content.outputUrl}
-                  alt="Output"
-                  className="img-fluid rounded shadow-sm"
-                  style={{ maxHeight: "250px", border: "2px solid #ddd" }}
-                />
+                {content.outputType === "image" ? (
+                  <img
+                    src={content.outputValue}
+                    alt="Output"
+                    className="img-fluid rounded shadow-sm"
+                    style={{ maxHeight: "250px", border: "2px solid #ddd" }}
+                  />
+                ) : (
+                  <pre
+                    className="p-3 bg-light text-dark rounded shadow-sm text-start"
+                    style={{ overflowX: "auto" }}
+                  >
+                    {content.outputValue}
+                  </pre>
+                )}
               </div>
             </Collapse>
           </>
@@ -155,7 +168,6 @@ const Learning = () => {
         {/* Run Online Buttons */}
         {content.exampleCode && (
           <div className="text-center mt-4 d-flex gap-3 flex-wrap justify-content-center">
-            {/* Free C/C++/Java/Python compiler */}
             <Button
               variant="warning"
               className="px-4 py-2 rounded-pill shadow-sm"
@@ -165,7 +177,6 @@ const Learning = () => {
               🖥 Run C/Java/Python Online
             </Button>
 
-            {/* StackBlitz for React/Node */}
             <Button
               variant="success"
               className="px-4 py-2 rounded-pill shadow-sm"

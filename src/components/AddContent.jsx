@@ -3,6 +3,10 @@ import { Container, Card, Form, Button, Row, Col } from "react-bootstrap";
 import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../db/firebase.js";
 
+// ✅ Rich Text Editor
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
+
 const AddFeature = () => {
   const [formData, setFormData] = useState({
     youtubeUrl: "",
@@ -31,7 +35,8 @@ const AddFeature = () => {
     try {
       const urlObj = new URL(url);
       if (urlObj.hostname === "youtu.be") return urlObj.pathname.slice(1);
-      if (urlObj.hostname.includes("youtube.com")) return urlObj.searchParams.get("v");
+      if (urlObj.hostname.includes("youtube.com"))
+        return urlObj.searchParams.get("v");
     } catch {
       return null;
     }
@@ -75,7 +80,10 @@ const AddFeature = () => {
     <Container className="my-5">
       <Card className="shadow-lg border-0 rounded-4 overflow-hidden">
         {/* Header */}
-        <div className="p-4 text-white" style={{ background: "linear-gradient(90deg,#28a745,#20c997)" }}>
+        <div
+          className="p-4 text-white"
+          style={{ background: "linear-gradient(90deg,#28a745,#20c997)" }}
+        >
           <h2 className="fw-bold text-center mb-0">➕ Add Feature</h2>
         </div>
 
@@ -99,7 +107,9 @@ const AddFeature = () => {
                 <iframe
                   width="100%"
                   height="315"
-                  src={`https://www.youtube.com/embed/${getVideoId(formData.youtubeUrl)}`}
+                  src={`https://www.youtube.com/embed/${getVideoId(
+                    formData.youtubeUrl
+                  )}`}
                   title="YouTube video"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -136,17 +146,17 @@ const AddFeature = () => {
               />
             </Form.Group>
 
-            {/* Full Description */}
+            {/* ✅ Full Description with Rich Text Editor */}
             <Form.Group className="mb-4">
               <Form.Label className="fw-bold">📘 Full Description</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={5}
-                placeholder="Detailed content"
-                name="fullDescription"
+              <ReactQuill
+                theme="snow"
                 value={formData.fullDescription}
-                onChange={handleChange}
-                required
+                onChange={(value) =>
+                  setFormData({ ...formData, fullDescription: value })
+                }
+                placeholder="Write detailed content here..."
+                style={{ background: "white", borderRadius: "8px" }}
               />
             </Form.Group>
 
@@ -165,7 +175,10 @@ const AddFeature = () => {
                   />
                 </Form.Group>
               </Col>
-              <Col md={4} className="d-flex justify-content-center align-items-center">
+              <Col
+                md={4}
+                className="d-flex justify-content-center align-items-center"
+              >
                 {formData.image ? (
                   <img
                     src={formData.image}
@@ -220,11 +233,17 @@ const AddFeature = () => {
             {/* Output Value */}
             <Form.Group className="mb-4">
               <Form.Label className="fw-bold">
-                {formData.outputType === "image" ? "🖼 Output Image URL" : "📝 Output Text"}
+                {formData.outputType === "image"
+                  ? "🖼 Output Image URL"
+                  : "📝 Output Text"}
               </Form.Label>
               <Form.Control
                 type="text"
-                placeholder={formData.outputType === "image" ? "Enter image URL" : "Enter text output"}
+                placeholder={
+                  formData.outputType === "image"
+                    ? "Enter image URL"
+                    : "Enter text output"
+                }
                 name="outputValue"
                 value={formData.outputValue}
                 onChange={handleChange}
@@ -251,7 +270,10 @@ const AddFeature = () => {
                 type="submit"
                 disabled={loading}
                 className="px-5 py-2 rounded-pill shadow-sm fw-bold"
-                style={{ background: "linear-gradient(90deg,#28a745,#20c997)", border: "none" }}
+                style={{
+                  background: "linear-gradient(90deg,#28a745,#20c997)",
+                  border: "none",
+                }}
               >
                 {loading ? "⏳ Uploading..." : "🚀 Add Feature"}
               </Button>
@@ -266,4 +288,3 @@ const AddFeature = () => {
 };
 
 export default AddFeature;
-  
